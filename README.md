@@ -11,6 +11,6 @@
 
 ## 成员角色分配
 | 姓名      |       学号        |         Scrum 角色 |
-|           |                   | Scrum Master (SM) |
+|   黄瑞    |  9109223102       | Scrum Master (SM) |
 |            |                   | 产品负责人 (PO) |
 |            |             | 开发团队 (Dev Team) |
