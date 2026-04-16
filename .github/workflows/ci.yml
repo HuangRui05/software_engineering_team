@@ -9,21 +9,22 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install pytest
-
-    - name: Run tests
-      run: |
-        cd my-mud-game
-        pytest test_mud.py -v
+      - uses: actions/checkout@v4
+      
+      # 直接指定 Python 版本，不使用花哨的动作
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+          
+      # 关键：强制进入 my-mud-game 目录执行测试
+      - name: Run unit tests
+        run: |
+          cd my-mud-game
+          python -m pytest test_mud.py -v
