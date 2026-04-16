@@ -1,0 +1,82 @@
+openapi: 3.0.0
+info:
+  title: MUD 游戏后端接口契约
+  description: 基于团队 MUD 游戏代码生成的 OpenAPI 接口文档
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000
+    description: 本地开发服务器
+
+paths:
+  /api/player/login:
+    post:
+      summary: 玩家登录
+      description: 玩家输入用户名密码登录游戏
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: 登录成功
+
+  /api/player/status:
+    get:
+      summary: 获取玩家状态
+      description: 获取当前玩家的名字、生命值、位置
+      responses:
+        '200':
+          description: 返回玩家信息
+
+  /api/room/current:
+    get:
+      summary: 获取当前房间信息
+      description: 获取玩家所在房间的名称、描述、出口
+      responses:
+        '200':
+          description: 返回房间数据
+
+  /api/player/move:
+    post:
+      summary: 玩家移动
+      description: 向指定方向移动，如 north, south, east, west
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                direction:
+                  type: string
+                  example: "north"
+      responses:
+        '200':
+          description: 移动成功
+        '400':
+          description: 无法往该方向移动
+
+  /api/command/execute:
+    post:
+      summary: 执行游戏命令
+      description: 输入游戏指令，例如 look, go, attack
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                command:
+                  type: string
+                  example: "look"
+      responses:
+        '200':
+          description: 命令执行成功
