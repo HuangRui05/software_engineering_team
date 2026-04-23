@@ -1,4 +1,4 @@
-# 模拟你们游戏的登录校验逻辑
+# 模拟游戏的登录校验逻辑
 def validate_login(username: str, password: str) -> bool:
     """
     模拟游戏的登录校验函数
