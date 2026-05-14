@@ -43,7 +43,7 @@ jobs:
       - name: Run API integration tests
         run: |
           cd my-mud-game
-          export PYTHONPATH=$(pwd):$PYTHONPATH
+          export PYTHONPATH=$(pwd)/backend:$PYTHONPATH
           pytest tests/test_api.py -v
 
   docker-build:
