@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>MUD 2D 图形版 - 可点击箭头</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        body { background: #1a1a2e; color: white; font-family: monospace; display: flex; justify-content: center; padding: 20px; }
+        .game-container { background: #0f0f1a; border-radius: 10px; padding: 20px; max-width: 700px; }
+        canvas { background: #2a2a3e; border: 1px solid #00ff88; margin-bottom: 10px; cursor: pointer; display: block; margin-left: auto; margin-right: auto; }
+        .info-panel { margin-top: 10px; background: #000; padding: 10px; border-radius: 5px; }
+        button { background: #00ff88; color: black; border: none; padding: 5px 10px; margin: 5px; cursor: pointer; border-radius: 4px; }
+        input { background: #2a2a3e; border: 1px solid #00ff88; color: white; padding: 5px; border-radius: 4px; }
+        .exits { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div class="game-container">
+        <h2>🎮 MUD 地牢 · 2D 图形版（点击箭头移动）</h2>
+        <canvas id="gameCanvas" width="500" height="400" @click="handleCanvasClick"></canvas>
+        <div class="info-panel">
+            <div><strong>📍 当前位置</strong> {{ roomName }}</div>
+            <div><strong>📖 描述</strong> {{ roomDesc }}</div>
+            <div class="exits">
+                <strong>🚪 出口：</strong>
+                <button v-for="dir in exits" :key="dir" @click="move(dir)">{{ dir.toUpperCase() }}</button>
+            </div>
+            <div><strong>👥 同房玩家</strong> {{ players.join(', ') || '无' }}</div>
+            <div style="margin-top:15px">
+                <input v-model="playerName" placeholder="输入玩家名" />
+                <button @click="joinGame">加入游戏</button>
+                <button @click="refresh">刷新状态</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const { createApp, ref, onMounted, nextTick } = Vue;
+    createApp({
+        setup() {
+            const playerName = ref('');
+            const roomName = ref('');
+            const roomDesc = ref('');
+            const exits = ref([]);
+            const players = ref([]);
+            const currentPlayer = ref(null);
+            const apiBase = 'http://localhost:8000/api';
+
+            let arrowRegions = []; // 存储每个箭头的区域 { direction, x, y, width, height }
+
+            const joinGame = async () => {
+                if (!playerName.value) return alert('请输入玩家名');
+                try {
+                    const res = await fetch(`${apiBase}/join`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ player_name: playerName.value })
+                    });
+                    if (!res.ok) throw new Error(await res.text());
+                    const data = await res.json();
+                    currentPlayer.value = playerName.value;
+                    await refresh();
+                } catch (err) {
+                    alert('加入失败：' + err.message);
+                }
+            };
+
+            const refresh = async () => {
+                if (!currentPlayer.value) return;
+                const res = await fetch(`${apiBase}/status/${currentPlayer.value}`);
+                if (!res.ok) return;
+                const data = await res.json();
+                roomName.value = data.room_name;
+                roomDesc.value = data.room_desc;
+                exits.value = data.exits;
+                players.value = data.players;
+                await nextTick();
+                drawCanvas();
+            };
+
+            const move = async (dir) => {
+                if (!currentPlayer.value) return alert('请先加入游戏');
+                const res = await fetch(`${apiBase}/move`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ player_name: currentPlayer.value, direction: dir })
+                });
+                if (!res.ok) {
+                    const err = await res.text();
+                    alert('移动失败：' + err);
+                    return;
+                }
+                await refresh();
+            };
+
+            const drawCanvas = () => {
+                const canvas = document.getElementById('gameCanvas');
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#2a2a3e';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // 绘制房间名和描述
+                ctx.fillStyle = '#00ff88';
+                ctx.font = 'bold 20px monospace';
+                ctx.fillText(roomName.value || '未知房间', 20, 50);
+                ctx.fillStyle = '#cccccc';
+                ctx.font = '14px monospace';
+                const desc = roomDesc.value || '';
+                const lines = desc.match(/.{1,30}/g) || [];
+                for (let i = 0; i < Math.min(lines.length, 3); i++) {
+                    ctx.fillText(lines[i], 20, 90 + i*20);
+                }
+                
+                // 绘制出口箭头和可点击区域
+                const centerX = 250, centerY = 250;
+                const arrowLength = 70;
+                arrowRegions = [];
+                
+                const directions = [
+                    { dir: 'north', dx: 0, dy: -arrowLength, cx: centerX, cy: centerY - arrowLength/2, w: 40, h: arrowLength },
+                    { dir: 'south', dx: 0, dy: arrowLength, cx: centerX, cy: centerY + arrowLength/2, w: 40, h: arrowLength },
+                    { dir: 'east', dx: arrowLength, dy: 0, cx: centerX + arrowLength/2, cy: centerY, w: arrowLength, h: 40 },
+                    { dir: 'west', dx: -arrowLength, dy: 0, cx: centerX - arrowLength/2, cy: centerY, w: arrowLength, h: 40 }
+                ];
+                
+                for (let d of directions) {
+                    if (!exits.value.includes(d.dir)) continue;
+                    // 绘制箭头线
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, centerY);
+                    ctx.lineTo(centerX + d.dx, centerY + d.dy);
+                    ctx.strokeStyle = '#ffaa33';
+                    ctx.lineWidth = 4;
+                    ctx.stroke();
+                    // 绘制三角形箭头头
+                    const angle = Math.atan2(d.dy, d.dx);
+                    const headX = centerX + d.dx;
+                    const headY = centerY + d.dy;
+                    const arrowSize = 12;
+                    const leftX = headX - arrowSize * Math.cos(angle - Math.PI/6);
+                    const leftY = headY - arrowSize * Math.sin(angle - Math.PI/6);
+                    const rightX = headX - arrowSize * Math.cos(angle + Math.PI/6);
+                    const rightY = headY - arrowSize * Math.sin(angle + Math.PI/6);
+                    ctx.fillStyle = '#ffaa33';
+                    ctx.beginPath();
+                    ctx.moveTo(headX, headY);
+                    ctx.lineTo(leftX, leftY);
+                    ctx.lineTo(rightX, rightY);
+                    ctx.fill();
+                    
+                    // 记录可点击区域（围绕箭头线路的一个矩形）
+                    let region = { direction: d.dir, x: 0, y: 0, w: 40, h: 40 };
+                    if (d.dir === 'north') { region.x = centerX - 20; region.y = centerY - arrowLength; region.h = arrowLength; }
+                    if (d.dir === 'south') { region.x = centerX - 20; region.y = centerY; region.h = arrowLength; }
+                    if (d.dir === 'east') { region.x = centerX; region.y = centerY - 20; region.w = arrowLength; }
+                    if (d.dir === 'west') { region.x = centerX - arrowLength; region.y = centerY - 20; region.w = arrowLength; }
+                    arrowRegions.push(region);
+                }
+                
+                // 画玩家圆点
+                ctx.fillStyle = '#ff3366';
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, 14, 0, 2*Math.PI);
+                ctx.fill();
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 18px monospace';
+                ctx.fillText(currentPlayer.value?.charAt(0) || 'P', centerX-7, centerY+7);
+            };
+
+            const handleCanvasClick = (e) => {
+                const canvas = document.getElementById('gameCanvas');
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                const mouseX = (e.clientX - rect.left) * scaleX;
+                const mouseY = (e.clientY - rect.top) * scaleY;
+                for (let region of arrowRegions) {
+                    if (mouseX >= region.x && mouseX <= region.x+region.w && mouseY >= region.y && mouseY <= region.y+region.h) {
+                        move(region.direction);
+                        break;
+                    }
+                }
+            };
+
+            onMounted(() => {
+                drawCanvas();
+                const canvas = document.getElementById('gameCanvas');
+                canvas.addEventListener('click', handleCanvasClick);
+            });
+
+            return { playerName, roomName, roomDesc, exits, players, joinGame, move, refresh, handleCanvasClick };
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>

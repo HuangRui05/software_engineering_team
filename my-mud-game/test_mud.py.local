@@ -1,0 +1,30 @@
+import pytest
+from mud_server import Room, Player
+
+class TestRoom:
+    def test_get_exit_exists(self):
+        room1 = Room("房间1", "描述1")
+        room2 = Room("房间2", "描述2")
+        room1.exits["north"] = room2
+        assert room1.get_exit("north") == room2
+    
+    def test_get_exit_not_exists(self):
+        room1 = Room("房间1", "描述1")
+        assert room1.get_exit("south") is None
+
+class TestPlayer:
+    def test_move_success(self):
+        room1 = Room("起点", "起点描述")
+        room2 = Room("终点", "终点描述")
+        room1.exits["north"] = room2
+        player = Player("test_user", room1)
+        success, msg = player.move("north")
+        assert success == True
+        assert player.current_room == room2
+    
+    def test_move_fail(self):
+        room1 = Room("起点", "起点描述")
+        player = Player("test_user", room1)
+        success, msg = player.move("north")
+        assert success == False
+        assert "无法向 north 移动" in msg

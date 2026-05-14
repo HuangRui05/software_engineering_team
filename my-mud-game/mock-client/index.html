@@ -1,0 +1,139 @@
+test 
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>MUD 游戏 - Mock 预览版</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a2e;
+            color: #eee;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .game-container {
+            background: #0f0f1a;
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid #00ff88;
+        }
+        .game-output {
+            background: #000;
+            padding: 15px;
+            height: 300px;
+            overflow-y: auto;
+            font-size: 14px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            white-space: pre-wrap;
+        }
+        .game-input {
+            display: flex;
+            gap: 10px;
+        }
+        input {
+            flex: 1;
+            padding: 10px;
+            background: #2a2a3e;
+            border: 1px solid #00ff88;
+            color: #eee;
+            font-family: monospace;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            background: #00ff88;
+            color: #000;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            border-radius: 5px;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            background: #2a2a3e;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        h2 {
+            color: #00ff88;
+            margin-top: 0;
+        }
+        .command-help {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .cmd-btn {
+            background: #2a2a3e;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h2>🎮 MUD 文字地牢 - Mock 预览版</h2>
+        <div class="game-output" id="output">
+            > 欢迎来到 MUD 游戏！<br>
+            > 当前使用 Mock 服务器<br>
+            > 输入 "look" 查看房间<br>
+            > 输入 "go north" 移动<br>
+            > 输入 "who" 查看在线玩家<br>
+            > ================================<br>
+        </div>
+        <div class="game-input">
+            <input type="text" id="commandInput" placeholder="输入指令..." />
+            <button onclick="sendCommand()">发送</button>
+        </div>
+        <div class="command-help">
+            <button class="cmd-btn" onclick="quickCmd('look')">🔍 look</button>
+            <button class="cmd-btn" onclick="quickCmd('go north')">⬆️ go north</button>
+            <button class="cmd-btn" onclick="quickCmd('who')">👥 who</button>
+        </div>
+        <div class="status">
+            🟢 Mock 模式 | 服务器: http://localhost:4010
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '';
+
+        function appendOutput(text) {
+            const output = document.getElementById('output');
+            output.innerHTML += '> ' + text + '<br>';
+            output.scrollTop = output.scrollHeight;
+        }
+
+        async function sendCommand() {
+            const input = document.getElementById('commandInput');
+            const cmd = input.value.trim();
+            if (!cmd) return;
+            
+            appendOutput(`📨 ${cmd}`);
+            input.value = '';
+            
+            try {
+                const response = await fetch('/command', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command: cmd, playerName: '勇士阿强' })
+                });
+                const text = await response.text();
+                appendOutput(text);
+            } catch (error) {
+                appendOutput(`❌ 错误: ${error.message}`);
+            }
+        }
+
+        function quickCmd(cmd) {
+            document.getElementById('commandInput').value = cmd;
+            sendCommand();
+        }
+    </script>
+</body>
+</html>
