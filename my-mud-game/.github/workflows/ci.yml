@@ -20,7 +20,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest pytest-cov
       - name: Run unit tests for game_core
-        run: pytest test_game_core.py -v --cov=game_core
+        run: |
+          cd my-mud-game
+          pytest test_game_core.py -v --cov=game_core
 
   api-test:
     runs-on: ubuntu-latest
@@ -35,11 +37,13 @@ jobs:
           pip install fastapi uvicorn pytest httpx
       - name: Start backend server
         run: |
-          cd backend
+          cd my-mud-game/backend
           uvicorn app:app --host 0.0.0.0 --port 8000 &
           sleep 5
       - name: Run API integration tests
-        run: pytest tests/test_api.py -v
+        run: |
+          cd my-mud-game
+          pytest tests/test_api.py -v
 
   docker-build:
     runs-on: ubuntu-latest
@@ -56,6 +60,6 @@ jobs:
       - name: Build and push backend image
         uses: docker/build-push-action@v5
         with:
-          context: ./backend
+          context: ./my-mud-game/backend
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/mud-backend:latest
